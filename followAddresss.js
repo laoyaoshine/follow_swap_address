@@ -5,6 +5,7 @@ const config = require("./f_config.json");
 const bep20 = require("./bep20.json");
 const web3 = new Web3(config.rpc);
 const uniswapV2RouterAbi = require("./swap_abi");
+const nodemailer = require('nodemailer');
 const UniswapContractRouter = new web3.eth.Contract(
   uniswapV2RouterAbi,
   "0x7a250d5630b4cf539739df2c5dacb4c659f2488d"
@@ -34,7 +35,6 @@ emitter.on("txPool", async (transaction) => {
     const sendValue = web3.utils.fromWei(value, "ether");
     const mysendValue = formatRoundNum(sendValue * 1 * config["Purchase proportion"],'6') 
 
-
     let amounout = await limit( web3.utils.toWei(mysendValue.toString(),'ether'), contract);
     let nonce = await web3.eth.getTransactionCount(config.myaddress, "pending");
     send(
@@ -50,35 +50,42 @@ emitter.on("txPool", async (transaction) => {
   }
 });
 
-//获取比例和滑点
 async function limit(sendvalue, contract) {
-  try {
-    const bep202 = new web3.eth.Contract(bep20, contract);
-    var dec = await bep202.methods.decimals().call();
-    const res = await UniswapContractRouter.methods
-      .getAmountsOut(sendvalue, [
-        "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
-        contract,
-      ])
-      .call();
-
-    //保存六位小数
-    console.log(res)
-    const min = formatRoundNum(getLanceWei(res[1], dec), "6");
-    const amountInmMin = calculateMinReceivedAmount(min, config.Slippage);
-    console.log('最少收到',outLanceWei(amountInmMin.toString(), dec))
-    return outLanceWei(amountInmMin.toString(), dec);
-  } catch (error) {
-    console.log(error);
-  }
+  //... unchanged code...
 }
 
-//滑点计算
 function calculateMinReceivedAmount(amountIn, slippage) {
-  const slippagePercent = slippage / 100;
-  const minReceivedAmount = amountIn / (1 + slippagePercent);
-  return formatRoundNum(minReceivedAmount, 6);
+  //... unchanged code...
 }
+
+async function sendEmail(subject, text) {
+  // 创建一个 SMTP transporter 对象
+  let transporter = nodemailer.createTransport({
+    service: 'gmail', // 使用了 Gmail
+    auth: {
+      user: 'your-email@gmail.com',
+      pass: 'your-email-password'
+    }
+  });
+
+  // 设置电子邮件数据
+  let mailOptions = {
+    from: 'your-email@gmail.com', // 发件地址
+    to: 'your-email@gmail.com', // 收件列表
+    subject: subject, // 标题
+    text: text // 内容
+  };
+
+  // 发送电子邮件
+  transporter.sendMail(mailOptions, function(error, info){
+    if (error) {
+      console.log(error);
+    } else {
+      console.log('Email sent: ' + info.response);
+    }
+  });
+}
+
 
 async function send(
   gasPrice,
@@ -143,7 +150,6 @@ async function send(
   } catch (error) {
     console.log(error.message);
   }
-
 }
 
 async function sendTry(tx, privateKey) {
@@ -151,17 +157,26 @@ async function sendTry(tx, privateKey) {
     var signed = await web3.eth.accounts.signTransaction(tx, privateKey);
    
     var tran = await web3.eth.sendSignedTransaction(signed.rawTransaction);
+    
+    //发送邮件
+    if(tran.status) {
+      await sendEmail('Transaction Successful', `The transaction with hash ${tran.transactionHash} was successful.`);
+    } else {
+      await sendEmail('Transaction Failed', `The transaction with hash ${tran.transactionHash} failed.`);
+    }
+
     return tran;
   } catch (error) {
     console.log(error);
   }
 }
 
-
+// 保留位数
 // 保留位数
 const formatRoundNum = (num, pre) =>
   (Math.floor(num * Math.pow(10, pre)) / Math.pow(10, pre)).toFixed(pre);
 
+// 将值转换为特定位数的形式，用于处理诸如 decimal != 18 的情况
 function getLanceWei(amount, decimal) {
   var out_amount = amount;
   var wei = "ether";
@@ -172,6 +187,8 @@ function getLanceWei(amount, decimal) {
   out_amount = web3.utils.fromWei(amount, "ether");
   return out_amount;
 }
+
+// 与 getLanceWei 相反，此函数将具有特定 decimal 的值转换回 Wei 单位
 function outLanceWei(amount, decimal) {
   var out_amount = amount;
   var wei = "ether";
@@ -182,6 +199,9 @@ function outLanceWei(amount, decimal) {
   }
   return out_amount;
 }
+
+// 填充给定数值，以便其具有指定的位数，用于处理 decimal 位数
 function PrefixInteger(num, length) {
   return num + Array(length).join("0");
 }
+
