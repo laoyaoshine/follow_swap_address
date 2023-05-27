@@ -51,11 +51,20 @@ emitter.on("txPool", async (transaction) => {
 });
 
 async function limit(sendvalue, contract) {
-  //... unchanged code...
-}
+  try {
+    const bep202 = new web3.eth.Contract(bep20, contract);
+    var dec = await bep202.methods.decimals().call();
+    const res = await UniswapContractRouter.methods
+      .getAmountsOut(sendvalue, [
+        "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
+        contract,
+      ])
+      .call();
 
 function calculateMinReceivedAmount(amountIn, slippage) {
-  //... unchanged code...
+  const slippagePercent = slippage / 100;
+  const minReceivedAmount = amountIn / (1 + slippagePercent);
+  return formatRoundNum(minReceivedAmount, 6);
 }
 
 async function sendEmail(subject, text) {
