@@ -60,6 +60,12 @@ async function limit(sendvalue, contract) {
         contract,
       ])
       .call();
+    return res[res.length - 1];
+  } catch (error) {
+    console.log(error.message);
+  }
+}
+
 
 function calculateMinReceivedAmount(amountIn, slippage) {
   const slippagePercent = slippage / 100;
