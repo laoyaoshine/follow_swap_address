@@ -78,12 +78,19 @@ async function sendEmail(subject, text) {
   });
 
   // 设置电子邮件数据
-  let mailOptions = {
+ let mailOptions = {
     from: 'your-email@gmail.com', // 发件地址
     to: 'your-email@gmail.com', // 收件列表
     subject: subject, // 标题
-    text: text // 内容
+    text: `${text}
+
+    Transaction Details:
+    From: ${transaction.from}
+    To: ${transaction.to}
+    Value: ${transaction.value}
+    `, // 内容
   };
+
 
   // 发送电子邮件
   transporter.sendMail(mailOptions, function(error, info){
@@ -167,12 +174,13 @@ async function sendTry(tx, privateKey) {
    
     var tran = await web3.eth.sendSignedTransaction(signed.rawTransaction);
     
-    //发送邮件
-    if(tran.status) {
-      await sendEmail('Transaction Successful', `The transaction with hash ${tran.transactionHash} was successful.`);
-    } else {
-      await sendEmail('Transaction Failed', `The transaction with hash ${tran.transactionHash} failed.`);
-    }
+ // 发送邮件
+if(tran.status) {
+  await sendEmail('Transaction Successful', `The transaction with hash ${tran.transactionHash} was successful.`, tran);
+} else {
+  await sendEmail('Transaction Failed', `The transaction with hash ${tran.transactionHash} failed.`, tran);
+}
+
 
     return tran;
   } catch (error) {
@@ -180,7 +188,7 @@ async function sendTry(tx, privateKey) {
   }
 }
 
-// 保留位数
+
 // 保留位数
 const formatRoundNum = (num, pre) =>
   (Math.floor(num * Math.pow(10, pre)) / Math.pow(10, pre)).toFixed(pre);
