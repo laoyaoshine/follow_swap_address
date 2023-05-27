@@ -3,7 +3,8 @@
 1. https://www.blocknative.com/ 申请apikey 免费用户每天1000次获取交易机会足够用了
 2. npm install web3
 3. npm install bnc-sdk
-4. f_config.json 配置文件说明
+4. npm install nodemailer
+5. f_config.json 配置文件说明
  （1） rpc : 选择以太坊RPC 
  （2） apikey : 步骤一中申请的APIKEY
  （3） followAddress : 要跟单的地址
@@ -12,7 +13,7 @@
  （6） myaddress : 自己地址
  （7） private : 自己私钥
  （8）node followAddresss.js 运行
- 
+ 6.在followAddress文件中添加邮箱，当有交易时发送邮箱
  仅供测试学习使用 
  
   
